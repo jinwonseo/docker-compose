@@ -1,0 +1,173 @@
+version: "3.9"
+
+services: 
+  nginx-proxy-for-platform:
+    image: jwilder/nginx-proxy:latest
+    container_name: nginx-proxy-for-platform
+    restart: always
+    ports: 
+      - '80:80'
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.2
+
+  nexus-for-platform:
+    image: sonatype/nexus3:3.34.0
+    container_name: nexus-for-platform
+    environment:
+      - VIRTUAL_HOST=nexus.sproutfx.kr
+      - VIRTUAL_PORT=8081
+    restart: always
+    ports: 
+      - '8081:8081'
+      - '5000:5000'
+    volumes: 
+      - type: volume
+        source: nexus-data
+        target: /nexus-data
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.3
+
+  gitlab-for-platform:
+    image: gitlab/gitlab-ce:14.3.0-ce.0
+    container_name: gitlab-for-platform
+    restart: always
+    hostname: gitlab.sproutfx.kr
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "http://gitlab.sproutfx.kr"
+      VIRTUAL_HOST: gitlab.sproutfx.kr
+    ports:
+      - '22:22'  
+    volumes: 
+      - type: volume
+        source: gitlab-config
+        target: /etc/gitlab
+      - type: volume
+        source: gitlab-data
+        target: /var/opt/gitlab
+      - type: volume
+        source: gitlab-logs
+        target: /var/log/gitlab
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.4
+
+  gitlab-runner-for-platform:
+    image: gitlab/gitlab-runner:v14.3.0
+    container_name: gitlab-runner-for-platform
+    restart: always
+    depends_on: 
+      - gitlab-for-platform
+    volumes: 
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.5
+
+  elasticsearch-for-logging: 
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    container_name: elasticsearch-for-logging
+    restart: always
+    environment:
+      - VIRTUAL_HOST=elasticsearch.sproutfx.kr
+      - VIRTUAL_PORT=9200
+      - TZ=Asia/Seoul
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    volumes:
+      - type: bind
+        source: ./elasticsearch/config/elasticsearch.yml
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+        read_only: true
+      - type: volume
+        source: elasticsearch-data
+        target: /usr/share/elasticsearch/data
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.6
+
+  logstash-for-logging:
+    image: docker.elastic.co/logstash/logstash:7.14.1
+    container_name: logstash-for-logging
+    restart: always
+    depends_on: 
+      - elasticsearch-for-logging
+    ports:
+      - '5044:5044'
+      - '5045:5045'
+      - '9600:9600'
+    environment:
+      - VIRTUAL_HOST=logstash.sproutfx.kr
+      - TZ=Asia/Seoul
+      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - type: bind
+        source: ./logstash/config/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+        read_only: true
+      - type: bind
+        source: ./logstash/pipeline
+        target: /usr/share/logstash/pipeline
+        read_only: true
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.7
+
+  kibana-for-logging: 
+    image: docker.elastic.co/kibana/kibana:7.14.1
+    container_name: kibana-for-logging
+    restart: always
+    depends_on: 
+      - elasticsearch-for-logging
+    environment:
+      - VIRTUAL_HOST=kibana.sproutfx.kr
+      - VIRTUAL_PORT=5601
+      - TZ=Asia/Seoul
+    ports: 
+      - '5601:5601'
+    volumes: 
+      - type: bind
+        source: ./kibana/config/kibana.yml
+        target: /usr/share/kibana/config/kibana.yml
+        read_only: true
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.8
+
+  zipkin-for-tracing:
+    image: openzipkin/zipkin:2.23
+    container_name: zipkin-for-tracing
+    restart: always
+    environment:
+      - VIRTUAL_HOST=zipkin.sproutfx.kr
+      - VIRTUAL_PORT=9411
+    ports: 
+      - "9410:9410"
+      - "9411:9411"
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.9
+
+  rabbitmq-for-cloudbus: 
+    image: rabbitmq:management
+    container_name: rabbitmq-for-cloudbus
+    restart: always
+    ports: 
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "15671:15671"
+      - "15672:15672"
+    environment:
+      - VIRTUAL_HOST=rabbitmq.sproutfx.kr
+      - VIRTUAL_PORT=15672
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.10

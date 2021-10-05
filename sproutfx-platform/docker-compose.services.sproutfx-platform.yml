@@ -1,0 +1,152 @@
+version: "3.9"
+
+services:
+  config-service:
+    build:
+      context: ..\..\config-service\
+      dockerfile: dockerfile
+    image: sproufx-platform-config-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    ports:
+      - "8888:8888"
+    container_name: sproufx-platform-config-service
+    restart: always
+    depends_on: 
+      - zipkin-for-tracing
+      - rabbitmq-for-cloudbus
+      - logstash-for-logging
+    environment: 
+      SPRING_APPLICATION_JSON: '{
+        "spring.profiles.active": "local-docker"
+      }'
+      VIRTUAL_HOST: config-service.sproutfx.kr
+      VIRTUAL_PORT: 8888
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.11
+
+  discovery-service:
+    build:
+      context: ..\..\discovery-service
+      dockerfile: dockerfile
+    image: sproufx-platform-discovery-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    ports: 
+      - "8761:8761"
+    container_name: sproufx-platform-discovery-service
+    restart: always
+    depends_on: 
+      - config-service
+    environment: 
+      SPRING_APPLICATION_JSON: '{
+        "spring.profiles.active": "local-docker",
+        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+      }'
+      VIRTUAL_HOST: discovery-service.sproutfx.kr
+      VIRTUAL_PORT: 8761
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.12
+
+  gateway-service:
+    build:
+      context: ..\..\gateway-service
+      dockerfile: dockerfile
+    image: sproufx-platform-gateway-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    ports: 
+      - "8001:8001"
+    container_name: sproufx-platform-gateway-service
+    restart: always
+    depends_on: 
+      - config-service
+      - discovery-service
+    environment: 
+      SPRING_APPLICATION_JSON: '{
+        "spring.profiles.active": "local-docker",
+        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+      }'
+      VIRTUAL_HOST: gateway-service.sproutfx.kr
+      VIRTUAL_PORT: 8001
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.13
+
+  auth-service:
+    build:
+      context: ..\..\auth-service
+      dockerfile: dockerfile
+    image: sproufx-platform-auth-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: sproufx-platform-auth-service
+    restart: always
+    depends_on: 
+      - config-service
+      - discovery-service
+      - gateway-service
+    environment: 
+      SPRING_APPLICATION_JSON: '{
+        "spring.profiles.active": "local-docker",
+        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+      }'
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.14
+
+  admin-service:
+    build:
+      context: ..\..\admin-service
+      dockerfile: dockerfile
+    image: sproufx-platform-admin-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: sproufx-platform-admin-service
+    restart: always
+    depends_on: 
+      - config-service
+      - discovery-service
+      - gateway-service
+      - auth-service
+    environment: 
+      SPRING_APPLICATION_JSON: '{
+        "spring.profiles.active": "local-docker",
+        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+      }'
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.15
+
+  web-service:
+    build:
+      context: ..\..\web-service
+      dockerfile: dockerfile
+    image: sproufx-platform-web-service
+    container_name: sproufx-platform-web-service
+    restart: always
+    environment:
+      VIRTUAL_HOST: www.sproutfx.kr
+      VIRTUAL_PORT: 8000
+    ports:
+    - "8000:8000"
+    networks: 
+      platform:
+        ipv4_address: 172.20.0.254
