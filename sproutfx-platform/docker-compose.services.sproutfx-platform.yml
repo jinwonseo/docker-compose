@@ -140,6 +140,11 @@ services:
       context: ..\..\web-service
       dockerfile: dockerfile
     image: sproufx-platform-web-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 64M
     container_name: sproufx-platform-web-service
     restart: always
     environment:
