@@ -20,9 +20,10 @@ services:
       - rabbitmq-for-cloudbus
       - logstash-for-logging
     environment: 
-      SPRING_APPLICATION_JSON: '{
-        "spring.profiles.active": "local-docker"
-      }'
+      SPRING_PROFILES_ACTIVE: 'local-docker'
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.profiles.active": "local-docker"
+#      }'
       VIRTUAL_HOST: config-service.sproutfx.kr
       VIRTUAL_PORT: 8888
     networks: 
@@ -46,10 +47,12 @@ services:
     depends_on: 
       - config-service
     environment: 
-      SPRING_APPLICATION_JSON: '{
-        "spring.profiles.active": "local-docker",
-        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
-      }'
+      SPRING_PROFILES_ACTIVE: 'local-docker'
+      SPRING_CLOUD_CONFIG_URI: 'http://config-service.sproutfx.kr'
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.profiles.active": "local-docker",
+#        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+#      }'
       VIRTUAL_HOST: discovery-service.sproutfx.kr
       VIRTUAL_PORT: 8761
     networks: 
@@ -74,10 +77,12 @@ services:
       - config-service
       - discovery-service
     environment: 
-      SPRING_APPLICATION_JSON: '{
-        "spring.profiles.active": "local-docker",
-        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
-      }'
+      SPRING_PROFILES_ACTIVE: 'local-docker'
+      SPRING_CLOUD_CONFIG_URI: 'http://config-service.sproutfx.kr'    
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.profiles.active": "local-docker",
+#        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+#      }'
       VIRTUAL_HOST: gateway-service.sproutfx.kr
       VIRTUAL_PORT: 8001
     networks: 
@@ -101,10 +106,12 @@ services:
       - discovery-service
       - gateway-service
     environment: 
-      SPRING_APPLICATION_JSON: '{
-        "spring.profiles.active": "local-docker",
-        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
-      }'
+      SPRING_PROFILES_ACTIVE: 'local-docker'
+      SPRING_CLOUD_CONFIG_URI: 'http://config-service.sproutfx.kr'    
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.profiles.active": "local-docker",
+#        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+#      }'
     networks: 
       platform:
         ipv4_address: 172.20.0.14
@@ -127,10 +134,12 @@ services:
       - gateway-service
       - auth-service
     environment: 
-      SPRING_APPLICATION_JSON: '{
-        "spring.profiles.active": "local-docker",
-        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
-      }'
+      SPRING_PROFILES_ACTIVE: 'local-docker'
+      SPRING_CLOUD_CONFIG_URI: 'http://config-service.sproutfx.kr'    
+#      SPRING_APPLICATION_JSON: '{
+#        "spring.profiles.active": "local-docker",
+#        "spring.cloud.config.uri": "http://config-service.sproutfx.kr"
+#      }'
     networks: 
       platform:
         ipv4_address: 172.20.0.15
